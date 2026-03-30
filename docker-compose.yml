@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      - VITE_API_BASE_URL=http://backend:4000/api
+    depends_on:
+      - backend
+    ports:
+      - "4173:4173"
+    restart: unless-stopped
