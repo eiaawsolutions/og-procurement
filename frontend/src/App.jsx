@@ -408,14 +408,98 @@ const Dash = ({go,tenders,hseIncidents,loading}) => (
 );
 
 // ─── OTHER PAGES (Tender, Vendor, HSE, PO, Auction, Analytics, AI, Settings) ─
-const TenderPg = ({ tenders }) => { const [f,setF]=useState("All"); const ls=f==="All"?tenders:tenders.filter(t=>t.st===f); return (
+const TenderPg = ({ tenders, onCreated }) => {
+  const [f,setF]=useState("All");
+  const [view,setView]=useState("list");      // list | create | detail
+  const [selTender,setSelTender]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const [form,setForm]=useState({t:"",cat:"Upstream - Drilling",st:"Open",dl:"",bgt:"",hse:"",urg:"medium"});
+
+  const ls=f==="All"?tenders:tenders.filter(t=>t.st===f);
+
+  const categories=["Upstream - Drilling","Upstream - Maintenance","Upstream - Subsea","Midstream - Processing","Downstream - Storage","HSE - Safety"];
+  const urgencies=["low","medium","high"];
+  const statuses=["Open","Evaluation","Awarded","Closed"];
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const nextId = `TDR-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9000)+1000)}`;
+      const payload = { id: nextId, ...form, bids: 0 };
+      const res = await fetch(`${API_BASE_URL}/tenders`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("Failed to create tender");
+      setForm({t:"",cat:"Upstream - Drilling",st:"Open",dl:"",bgt:"",hse:"",urg:"medium"});
+      setView("list");
+      if (onCreated) onCreated();
+    } catch { /* error already visible via UI state */ } finally { setSaving(false); }
+  };
+
+  if (view === "create") return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button onClick={()=>setView("list")} className="text-stone-400 hover:text-stone-600 transition-colors">&larr;</button>
+        <h2 className="text-lg font-bold text-stone-800">Create Tender</h2>
+      </div>
+      <form onSubmit={handleCreate} className="bg-white rounded-xl border border-stone-200/80 p-6 space-y-4 max-w-2xl">
+        <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Title *</label><input required value={form.t} onChange={e=>setForm({...form,t:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="e.g. Supply of Drilling Mud & Chemicals" /></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Category *</label><select required value={form.cat} onChange={e=>setForm({...form,cat:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300">{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Status</label><select value={form.st} onChange={e=>setForm({...form,st:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300">{statuses.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Deadline *</label><input required type="date" value={form.dl} onChange={e=>setForm({...form,dl:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300" /></div>
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Budget *</label><input required value={form.bgt} onChange={e=>setForm({...form,bgt:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="e.g. MYR 2.4M" /></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">HSE Standard</label><input value={form.hse} onChange={e=>setForm({...form,hse:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300" placeholder="e.g. PETRONAS HSE" /></div>
+          <div><label className="block text-[11px] font-semibold text-stone-500 mb-1">Urgency</label><select value={form.urg} onChange={e=>setForm({...form,urg:e.target.value})} className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300">{urgencies.map(u=><option key={u} value={u}>{u.charAt(0).toUpperCase()+u.slice(1)}</option>)}</select></div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={saving} className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50">{saving ? "Saving..." : <><I.Plus /> Create Tender</>}</button>
+          <button type="button" onClick={()=>setView("list")} className="px-5 py-2 text-xs font-semibold text-stone-500 bg-stone-100 rounded-lg hover:bg-stone-200">Cancel</button>
+        </div>
+      </form>
+    </div>
+  );
+
+  if (view === "detail" && selTender) return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button onClick={()=>{setView("list");setSelTender(null);}} className="text-stone-400 hover:text-stone-600 transition-colors">&larr;</button>
+        <h2 className="text-lg font-bold text-stone-800">Tender Details</h2>
+      </div>
+      <div className="bg-white rounded-xl border border-stone-200/80 p-6 max-w-2xl space-y-5">
+        <div className="flex items-center justify-between"><span className="text-xs font-mono text-stone-400">{selTender.id}</span><div className="flex items-center gap-2">{selTender.urg==="high"&&<span className="px-1.5 py-0.5 text-[10px] font-bold text-red-600 bg-red-50 rounded">URGENT</span>}{SB(selTender.st)}</div></div>
+        <h3 className="text-base font-bold text-stone-800">{selTender.t}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[
+            {l:"Category",v:selTender.cat},
+            {l:"Budget",v:selTender.bgt},
+            {l:"Deadline",v:selTender.dl},
+            {l:"Bids Received",v:selTender.bids},
+            {l:"HSE Standard",v:selTender.hse||"—"},
+            {l:"Urgency",v:selTender.urg ? selTender.urg.charAt(0).toUpperCase()+selTender.urg.slice(1) : "—"},
+          ].map(r=>(
+            <div key={r.l} className="p-3 rounded-lg bg-stone-50">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase mb-1">{r.l}</p>
+              <p className="text-sm font-semibold text-stone-700">{r.v}</p>
+            </div>
+          ))}
+        </div>
+        <div className="pt-2"><button onClick={()=>{setView("list");setSelTender(null);}} className="px-5 py-2 text-xs font-semibold text-stone-500 bg-stone-100 rounded-lg hover:bg-stone-200">Back to List</button></div>
+      </div>
+    </div>
+  );
+
+  return (
   <div className="space-y-4">
-    <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-stone-800">Tender Management</h2><button className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600"><I.Plus /> Create Tender</button></div>
+    <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-stone-800">Tender Management</h2><button onClick={()=>setView("create")} className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600"><I.Plus /> Create Tender</button></div>
     <div className="flex gap-2 flex-wrap">{["All","Open","Evaluation","Awarded","Closed"].map(s=><button key={s} onClick={()=>setF(s)} className={cn("px-3 py-1.5 text-[11px] font-medium rounded-lg",f===s?"bg-orange-500 text-white":"bg-stone-100 text-stone-500 hover:bg-stone-200")}>{s}</button>)}</div>
     <div className="bg-white rounded-xl border border-stone-200/80 overflow-hidden"><div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-stone-50">{["ID","Title","Category","Status","Budget","Bids","Deadline","HSE",""].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
-    <tbody className="divide-y divide-stone-100">{ls.map(t=><tr key={t.id} className="hover:bg-stone-50"><td className="px-4 py-3 text-xs font-mono text-stone-400">{t.id}</td><td className="px-4 py-3"><div className="flex items-center gap-1.5">{t.urg==="high"&&<span className="text-red-500"><I.Fire /></span>}<span className="text-xs font-semibold text-stone-800">{t.t}</span></div></td><td className="px-4 py-3 text-xs text-stone-500">{t.cat}</td><td className="px-4 py-3">{SB(t.st)}</td><td className="px-4 py-3 text-xs font-semibold text-stone-700">{t.bgt}</td><td className="px-4 py-3 text-xs text-stone-500">{t.bids}</td><td className="px-4 py-3 text-xs text-stone-500">{t.dl}</td><td className="px-4 py-3 text-[10px] text-stone-400">{t.hse}</td><td className="px-4 py-3"><button className="text-orange-500"><I.Eye /></button></td></tr>)}</tbody></table></div></div>
-  </div>);};
-
+    <tbody className="divide-y divide-stone-100">{ls.map(t=><tr key={t.id} className="hover:bg-stone-50"><td className="px-4 py-3 text-xs font-mono text-stone-400">{t.id}</td><td className="px-4 py-3"><div className="flex items-center gap-1.5">{t.urg==="high"&&<span className="text-red-500"><I.Fire /></span>}<span className="text-xs font-semibold text-stone-800">{t.t}</span></div></td><td className="px-4 py-3 text-xs text-stone-500">{t.cat}</td><td className="px-4 py-3">{SB(t.st)}</td><td className="px-4 py-3 text-xs font-semibold text-stone-700">{t.bgt}</td><td className="px-4 py-3 text-xs text-stone-500">{t.bids}</td><td className="px-4 py-3 text-xs text-stone-500">{t.dl}</td><td className="px-4 py-3 text-[10px] text-stone-400">{t.hse}</td><td className="px-4 py-3"><button onClick={()=>{setSelTender(t);setView("detail");}} className="text-orange-500 hover:text-orange-700"><I.Eye /></button></td></tr>)}</tbody></table></div></div>
+  </div>);
+};
 const VendorPg = ({ vendors }) => { const [sel,setSel]=useState(null); const CN={MY:"Malaysia",SG:"Singapore",NO:"Norway"}; return (
   <div className="space-y-4">
     <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-stone-800">Vendor Management</h2><button className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600"><I.Plus /> Register Vendor</button></div>
@@ -536,33 +620,33 @@ export default function App() {
     return Array.isArray(payload.data) ? payload.data : [];
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [nextTenders, nextVendors, nextPurchaseOrders, nextIncidents] = await Promise.all([
-          fetchResource("tenders"),
-          fetchResource("vendors"),
-          fetchResource("purchase-orders"),
-          fetchResource("hse-incidents")
-        ]);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [nextTenders, nextVendors, nextPurchaseOrders, nextIncidents] = await Promise.all([
+        fetchResource("tenders"),
+        fetchResource("vendors"),
+        fetchResource("purchase-orders"),
+        fetchResource("hse-incidents")
+      ]);
 
-        setTenders(nextTenders);
-        setVendors(nextVendors);
-        setPurchaseOrders(nextPurchaseOrders);
-        setHseIncidents(nextIncidents);
-      } catch (_error) {
-        setTenders([]);
-        setVendors([]);
-        setPurchaseOrders([]);
-        setHseIncidents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+      setTenders(nextTenders);
+      setVendors(nextVendors);
+      setPurchaseOrders(nextPurchaseOrders);
+      setHseIncidents(nextIncidents);
+    } catch (_error) {
+      setTenders([]);
+      setVendors([]);
+      setPurchaseOrders([]);
+      setHseIncidents([]);
+    } finally {
+      setLoading(false);
+    }
   }, [fetchResource]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const nav=[
     {id:"dashboard",l:"Dashboard",i:<I.Dashboard />},
@@ -577,7 +661,7 @@ export default function App() {
     {id:"settings",l:"Settings",i:<I.Gear />},
   ];
 
-  const pages={dashboard:<Dash go={setPg} tenders={tenders} hseIncidents={hseIncidents} loading={loading} />,onboarding:<OnboardingPage />,tenders:<TenderPg tenders={tenders} />,vendors:<VendorPg vendors={vendors} />,hse:<HSEPg incidents={hseIncidents} />,po:<POPg purchaseOrders={purchaseOrders} />,auction:<AuctionPg />,analytics:<AnalyticsPg vendors={vendors} />,ai:<AIPg />,settings:<SettingsPg />};
+  const pages={dashboard:<Dash go={setPg} tenders={tenders} hseIncidents={hseIncidents} loading={loading} />,onboarding:<OnboardingPage />,tenders:<TenderPg tenders={tenders} onCreated={loadData} />,vendors:<VendorPg vendors={vendors} />,hse:<HSEPg incidents={hseIncidents} />,po:<POPg purchaseOrders={purchaseOrders} />,auction:<AuctionPg />,analytics:<AnalyticsPg vendors={vendors} />,ai:<AIPg />,settings:<SettingsPg />};
 
   return (
     <div className="flex h-screen bg-stone-50 text-stone-800 overflow-hidden" style={{fontFamily:"'Source Sans 3','Nunito Sans',system-ui,sans-serif"}}>
