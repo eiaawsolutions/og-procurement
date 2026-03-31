@@ -28,10 +28,10 @@ describe("App navigation and page links", () => {
       expect(global.fetch).toHaveBeenCalledTimes(4);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith("http://localhost:4000/api/tenders");
-    expect(global.fetch).toHaveBeenCalledWith("http://localhost:4000/api/vendors");
-    expect(global.fetch).toHaveBeenCalledWith("http://localhost:4000/api/purchase-orders");
-    expect(global.fetch).toHaveBeenCalledWith("http://localhost:4000/api/hse-incidents");
+    expect(global.fetch).toHaveBeenCalledWith("/api/tenders");
+    expect(global.fetch).toHaveBeenCalledWith("/api/vendors");
+    expect(global.fetch).toHaveBeenCalledWith("/api/purchase-orders");
+    expect(global.fetch).toHaveBeenCalledWith("/api/hse-incidents");
   });
 
   it("navigates to every main page from the sidebar", async () => {

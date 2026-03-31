@@ -10,7 +10,9 @@
     "test": "npm run test:run --prefix backend && npm run test:run --prefix frontend"
   },
   "devDependencies": {
-    "concurrently": "^9.0.1"
+    "@netlify/functions": "^5.1.5",
+    "concurrently": "^9.0.1",
+    "serverless-http": "^4.0.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.0"
