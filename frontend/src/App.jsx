@@ -117,39 +117,6 @@ const INTL = [
   { n: "ILO MLC 2006", d: "Maritime Labour Convention — seafarer welfare", cat: "Labour", req: false },
 ];
 
-// ─── MOCK DATA ──────────────────────────────────────────────────
-const TDR = [
-  { id:"TDR-2026-0041",t:"Supply of Drilling Mud & Chemicals",cat:"Upstream – Drilling",st:"Open",dl:"2026-04-15",bgt:"MYR 2.4M",bids:7,hse:"PETRONAS HSE",urg:"high" },
-  { id:"TDR-2026-0040",t:"Platform Structural Maintenance",cat:"Upstream – Maintenance",st:"Open",dl:"2026-04-22",bgt:"MYR 8.75M",bids:4,hse:"DOSH + OSHA",urg:"medium" },
-  { id:"TDR-2026-0039",t:"Subsea Pipeline Inspection (ROV)",cat:"Upstream – Subsea",st:"Evaluation",dl:"2026-03-28",bgt:"MYR 5.2M",bids:6,hse:"IMCA",urg:"high" },
-  { id:"TDR-2026-0038",t:"PPE & Safety Equipment Procurement",cat:"HSE – Safety",st:"Open",dl:"2026-04-30",bgt:"MYR 680K",bids:12,hse:"SIRIM MS",urg:"low" },
-  { id:"TDR-2026-0037",t:"Gas Compression System Overhaul",cat:"Midstream – Processing",st:"Awarded",dl:"2026-03-10",bgt:"MYR 12.3M",bids:3,hse:"API 618",urg:"high" },
-  { id:"TDR-2026-0036",t:"Tank Farm Cleaning & Sludge Disposal",cat:"Downstream – Storage",st:"Evaluation",dl:"2026-03-25",bgt:"MYR 1.95M",bids:5,hse:"DOE",urg:"medium" },
-];
-
-const VND = [
-  { id:"V-1001",nm:"PetroServ Engineering Sdn Bhd",cat:"Drilling Services",rt:4.7,hse:94,st:"Active",co:"MY",certs:["ISO 9001","ISO 14001","PETRONAS License"],prj:23 },
-  { id:"V-1002",nm:"AsiaPac Subsea Solutions",cat:"Subsea & ROV",rt:4.5,hse:91,st:"Active",co:"SG",certs:["IMCA","ISO 45001","DNV"],prj:18 },
-  { id:"V-1003",nm:"GlobalChem Industries",cat:"Chemicals & Fluids",rt:4.2,hse:87,st:"Active",co:"MY",certs:["SIRIM","ISO 9001","GHS"],prj:31 },
-  { id:"V-1004",nm:"TechFab Steel Structures",cat:"Fabrication",rt:4.0,hse:82,st:"Under Review",co:"MY",certs:["AWS D1.1","ASME","CIDB G7"],prj:14 },
-  { id:"V-1005",nm:"OceanGuard Safety Supplies",cat:"PPE & Safety",rt:4.8,hse:96,st:"Active",co:"MY",certs:["SIRIM MS","EN 166","ISO 9001"],prj:45 },
-  { id:"V-1006",nm:"Nordic Marine Services AS",cat:"Marine & Offshore",rt:4.3,hse:89,st:"Active",co:"NO",certs:["DNV GL","ISM Code","MLC 2006"],prj:12 },
-];
-
-const POS = [
-  { id:"PO-2026-0112",vn:"PetroServ Engineering",d:"Drill pipe rental",a:"MYR 340K",st:"Approved",dt:"2026-03-15" },
-  { id:"PO-2026-0111",vn:"GlobalChem Industries",d:"Barite & Bentonite Q2",a:"MYR 128.5K",st:"Pending",dt:"2026-03-14" },
-  { id:"PO-2026-0110",vn:"OceanGuard Safety",d:"H2S detectors & gas monitors",a:"MYR 89.2K",st:"Delivered",dt:"2026-03-01" },
-  { id:"PO-2026-0109",vn:"TechFab Steel",d:"Pipe supports & structural steel",a:"MYR 567K",st:"In Transit",dt:"2026-02-28" },
-];
-
-const HSE_INC = [
-  { id:"HSE-041",tp:"Near Miss",d:"Dropped object from crane during lifting",site:"Platform Alpha",dt:"2026-03-28",sv:"Medium",st:"Investigating" },
-  { id:"HSE-040",tp:"Environmental",d:"Minor hydraulic oil spill on deck",site:"FPSO Bunga Raya",dt:"2026-03-25",sv:"Low",st:"Resolved" },
-  { id:"HSE-038",tp:"Permit Violation",d:"Hot work without gas-free certificate",site:"Platform Bravo",dt:"2026-03-18",sv:"High",st:"Open" },
-  { id:"HSE-037",tp:"LTI",d:"Hand injury during valve replacement",site:"Gas Plant Duyong",dt:"2026-03-10",sv:"High",st:"Closed" },
-];
-
 // ─── UTILITIES ──────────────────────────────────────────────────
 const cn = (...c) => c.filter(Boolean).join(" ");
 const Badge = ({ children, v = "default" }) => {
@@ -553,41 +520,45 @@ const SettingsPg = () => (<div className="space-y-4"><h2 className="text-lg font
 export default function App() {
   const [pg,setPg]=useState("dashboard");
   const [sb,setSb]=useState(false);
-  const [tenders, setTenders] = useState(TDR);
-  const [vendors, setVendors] = useState(VND);
-  const [purchaseOrders, setPurchaseOrders] = useState(POS);
-  const [hseIncidents, setHseIncidents] = useState(HSE_INC);
+  const [tenders, setTenders] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [hseIncidents, setHseIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchResource = useCallback(async (path, fallbackData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/${path}`);
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
-      }
-
-      const payload = await response.json();
-      return Array.isArray(payload.data) ? payload.data : fallbackData;
-    } catch (_error) {
-      return fallbackData;
+  const fetchResource = useCallback(async (path) => {
+    const response = await fetch(`${API_BASE_URL}/${path}`);
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
     }
+
+    const payload = await response.json();
+    return Array.isArray(payload.data) ? payload.data : [];
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [nextTenders, nextVendors, nextPurchaseOrders, nextIncidents] = await Promise.all([
-        fetchResource("tenders", TDR),
-        fetchResource("vendors", VND),
-        fetchResource("purchase-orders", POS),
-        fetchResource("hse-incidents", HSE_INC)
-      ]);
+      try {
+        const [nextTenders, nextVendors, nextPurchaseOrders, nextIncidents] = await Promise.all([
+          fetchResource("tenders"),
+          fetchResource("vendors"),
+          fetchResource("purchase-orders"),
+          fetchResource("hse-incidents")
+        ]);
 
-      setTenders(nextTenders);
-      setVendors(nextVendors);
-      setPurchaseOrders(nextPurchaseOrders);
-      setHseIncidents(nextIncidents);
-      setLoading(false);
+        setTenders(nextTenders);
+        setVendors(nextVendors);
+        setPurchaseOrders(nextPurchaseOrders);
+        setHseIncidents(nextIncidents);
+      } catch (_error) {
+        setTenders([]);
+        setVendors([]);
+        setPurchaseOrders([]);
+        setHseIncidents([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();

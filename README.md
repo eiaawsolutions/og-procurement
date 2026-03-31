@@ -11,7 +11,7 @@ This repository is now split into:
 - `backend/src/config/supabaseClient.js`: Supabase connector
 - `backend/src/routes/*`: API resource routes
 - `backend/supabase/schema.sql`: starter table schema
-- `backend/supabase/seed.sql`: seed data from current mock records
+- `backend/supabase/seed.sql`: starter seed data for database bootstrapping
 - `docker-compose.yml`: run frontend + backend together
 
 ## 1. Install
@@ -92,14 +92,13 @@ HSE Incidents:
 - `PUT /api/hse-incidents/:id`
 - `DELETE /api/hse-incidents/:id`
 
-If Supabase env vars are missing, backend responds with fallback data so frontend still works.
-Mutation endpoints (`POST`, `PUT`, `DELETE`) require Supabase config and return `503` if not configured.
+All API endpoints require Supabase config and return `503` if not configured.
 
 ## Supabase Setup
 
 1. Open your Supabase SQL editor.
 2. Run `backend/supabase/schema.sql`.
-3. Run `backend/supabase/seed.sql` to load the mock dataset.
+3. Run `backend/supabase/seed.sql` to load the starter dataset.
 4. Start backend and verify `GET /health` returns `supabaseConfigured: true`.
 
 ## Run With Docker Compose

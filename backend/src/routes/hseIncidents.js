@@ -1,6 +1,5 @@
 import express from "express";
 import { hasSupabaseConfig, supabase } from "../config/supabaseClient.js";
-import { fallbackHseIncidents } from "../data/fallbackData.js";
 
 const router = express.Router();
 
@@ -16,8 +15,8 @@ const ensureSupabaseReady = (res) => {
 };
 
 router.get("/", async (_req, res) => {
-  if (!hasSupabaseConfig) {
-    return res.json({ source: "fallback", data: fallbackHseIncidents });
+  if (!ensureSupabaseReady(res)) {
+    return;
   }
 
   const { data, error } = await supabase
